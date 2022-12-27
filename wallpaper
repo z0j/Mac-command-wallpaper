@@ -14,6 +14,8 @@ done
 path=$real_path
 cd $path
 
+param2=$2
+
 pic_path="background/default.jpg"
 if [ $# -gt 0 ]; then
 	# pic_path or randweb or randlocal or save
@@ -27,7 +29,7 @@ if [ $# -gt 0 ]; then
 		echo "para2 : \"com\"            :  composite code calender "
 		echo "para3 : number[0-52]     :  this means pass week counter of code calender, with para2"
 		exit -1
-	elif [ $extension != "jpg" -a $extension != "png" -a $extension != "randweb" -a $extension != "randlocal" -a "save" ]; then
+	elif [ $extension != "jpg" -a $extension != "png" -a $extension != "randweb" -a $extension != "randlocal" -a "save" -a $extension != "randweb2" ]; then
 		echo "first para should be your_wallpaper_path or randweb or randlocal or save"
 		exit -1
 	fi
@@ -70,12 +72,20 @@ function random()
 
 localpath=$path"/"$pic_path
 
+function get_randweb_from_api() {
+	setting=`head -1 source/setting`
+	url="https://wallhaven.cc/api/v1/search?q=${param2}&${setting}"
+	curl -o source/wallhaven_api $url > /dev/null 2>&1
+	echo "background/road.jpg"
+}
+
 function get_pic() {
 	if [ $pic_path == "randweb" ]; then
 		web_list=`head -1 source/web_info | cut -d ' ' -f 1`
 		web_page=`head -1 source/web_info | cut -d ' ' -f 2`
 		agent=`tail -n1 source/web_info`
-		curl -o source/wallhaven -A "$agent" "$web_list" > /dev/null 2>&1
+		cookie=`tail -n1 source/cookie`
+		curl -o source/wallhaven -A "$agent" -H "$cookie" "$web_list" > /dev/null 2>&1
 		info=`cat source/wallhaven`
 		head_info=${info:13000:15000}
 		pic_id=`expr "$head_info" : ".*data-wallpaper-id=\"\(.*\)\" style=.*"`
@@ -101,6 +111,9 @@ function get_pic() {
 			mv -f background/$save_file background/x_$save_file
 		fi
         exit 0
+	elif [ $pic_path == "randweb2" ]; then
+		get_randweb_from_api
+		# pic_path=$(get_randweb_from_api)
 	fi
 	localpath=$path"/"$pic_path
 }
