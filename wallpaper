@@ -16,6 +16,7 @@ cd $path
 
 param2=$2
 
+search=''
 pic_path="background/default.jpg"
 if [ $# -gt 0 ]; then
 	# pic_path or randweb or randlocal or save
@@ -29,11 +30,16 @@ if [ $# -gt 0 ]; then
 		echo "para2 : \"com\"            :  composite code calender "
 		echo "para3 : number[0-52]     :  this means pass week counter of code calender, with para2"
 		exit -1
+	elif [[ $extension =~ ^randweb: ]]; then
+		search=${extension:8}
+		extension='randweb'
+		pic_path='randweb'
 	elif [ $extension != "jpg" -a $extension != "png" -a $extension != "randweb" -a $extension != "randlocal" -a $extension != "set" -a $extension != "save" ]; then
 		echo "first para should be your_wallpaper_path or randweb or randlocal or save"
 		exit -1
 	fi
 fi
+
 
 composite="no"
 pass_week=0
@@ -122,27 +128,26 @@ localpath=$path"/"$pic_path
 # get image url from api
 function get_randweb_from_api() {
 	setting=`head -1 source/setting`
-	url="https://wallhaven.cc/api/v1/search?q=${param2}&${setting}"
+	url="https://wallhaven.cc/api/v1/search?q=${search}&${setting}"
 	json=`curl -ss $url`
 	pic_url=($(getJsonValuesByAwk "$json" "path" ""))
 	# Fight back and forth
-	pic_url=${pic_url#*\"}
+	local key=$(($RANDOM%24))
+	pic_url=${pic_url[$key]#*\"}
 	pic_url=${pic_url%*\"}
-	echo $pic_url
+	echo "$url $pic_url"
 }
 
 function get_pic() {
 	if [ $pic_path == "randweb" ]; then
-		pic_url=$(get_randweb_from_api)
+		pic_url=($(get_randweb_from_api))
+		echo ${pic_url[0]}
+		pic_url=${pic_url[1]}
+		format=${pic_url##*.}
 		time=`date +%s`
-		random_pic_path="background/random"$time".jpg"
+		random_pic_path="background/random"$time".$format"
 		rm -f background/random*
 		curl -o $random_pic_path "$pic_url" > /dev/null 2>&1
-		if [ `grep 404 $random_pic_path | wc -l` -gt 0 ]; then
-			pic_url="$web_page$pic_id.png"
-			random_pic_path="background/random"$time".png"
-			curl -o $random_pic_path "$pic_url" > /dev/null 2>&1
-		fi
 		pic_path=$random_pic_path
 	elif [ $pic_path == "randlocal" ]; then
 		max_c=`ls background | wc -l`
