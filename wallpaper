@@ -29,7 +29,7 @@ if [ $# -gt 0 ]; then
 		echo "para2 : \"com\"            :  composite code calender "
 		echo "para3 : number[0-52]     :  this means pass week counter of code calender, with para2"
 		exit -1
-	elif [ $extension != "jpg" -a $extension != "png" -a $extension != "randweb" -a $extension != "randlocal" -a "save" -a $extension != "randweb2" ]; then
+	elif [ $extension != "jpg" -a $extension != "png" -a $extension != "randweb" -a $extension != "randlocal" -a $extension != "set" -a $extension != "save" ]; then
 		echo "first para should be your_wallpaper_path or randweb or randlocal or save"
 		exit -1
 	fi
@@ -70,31 +70,74 @@ function random()
     echo $retnum
 }
 
+### @author lux feary
+function getJsonValuesByAwk() {
+    awk -v json="$1" -v key="$2" -v defaultValue="$3" 'BEGIN{
+        foundKeyCount = 0
+        while (length(json) > 0) {
+            # pos = index(json, "\""key"\"");
+            pos = match(json, "\""key"\"[ \\t]*?:[ \\t]*");
+            if (pos == 0) {if (foundKeyCount == 0) {print defaultValue;} exit 0;}
+ 
+            ++foundKeyCount;
+            start = 0; stop = 0; layer = 0;
+            for (i = pos + length(key) + 1; i <= length(json); ++i) {
+                lastChar = substr(json, i - 1, 1)
+                currChar = substr(json, i, 1)
+ 
+                if (start <= 0) {
+                    if (lastChar == ":") {
+                        start = currChar == " " ? i + 1: i;
+                        if (currChar == "{" || currChar == "[") {
+                            layer = 1;
+                        }
+                    }
+                } else {
+                    if (currChar == "{" || currChar == "[") {
+                        ++layer;
+                    }
+                    if (currChar == "}" || currChar == "]") {
+                        --layer;
+                    }
+                    if ((currChar == "," || currChar == "}" || currChar == "]") && layer <= 0) {
+                        stop = currChar == "," ? i : i + 1 + layer;
+                        break;
+                    }
+                }
+            }
+ 
+            if (start <= 0 || stop <= 0 || start > length(json) || stop > length(json) || start >= stop) {
+                if (foundKeyCount == 0) {print defaultValue;} exit 0;
+            } else {
+                print substr(json, start, stop - start);
+            }
+ 
+            json = substr(json, stop + 1, length(json) - stop)
+        }
+    }'
+}
+
 localpath=$path"/"$pic_path
 
+# get image url from api
 function get_randweb_from_api() {
 	setting=`head -1 source/setting`
 	url="https://wallhaven.cc/api/v1/search?q=${param2}&${setting}"
-	curl -o source/wallhaven_api $url > /dev/null 2>&1
-	echo "background/road.jpg"
+	json=`curl -ss $url`
+	pic_url=($(getJsonValuesByAwk "$json" "path" ""))
+	# Fight back and forth
+	pic_url=${pic_url#*\"}
+	pic_url=${pic_url%*\"}
+	echo $pic_url
 }
 
 function get_pic() {
 	if [ $pic_path == "randweb" ]; then
-		web_list=`head -1 source/web_info | cut -d ' ' -f 1`
-		web_page=`head -1 source/web_info | cut -d ' ' -f 2`
-		agent=`tail -n1 source/web_info`
-		cookie=`tail -n1 source/cookie`
-		curl -o source/wallhaven -A "$agent" -H "$cookie" "$web_list" > /dev/null 2>&1
-		info=`cat source/wallhaven`
-		head_info=${info:13000:15000}
-		pic_id=`expr "$head_info" : ".*data-wallpaper-id=\"\(.*\)\" style=.*"`
-		pic_id_path=${pic_id:0:2}
-		pic_url="$web_page$pic_id_path/wallhaven-$pic_id.jpg"
+		pic_url=$(get_randweb_from_api)
 		time=`date +%s`
 		random_pic_path="background/random"$time".jpg"
 		rm -f background/random*
-		curl -o $random_pic_path "$pic_url" > /dev/null 2>&1 
+		curl -o $random_pic_path "$pic_url" > /dev/null 2>&1
 		if [ `grep 404 $random_pic_path | wc -l` -gt 0 ]; then
 			pic_url="$web_page$pic_id.png"
 			random_pic_path="background/random"$time".png"
@@ -111,9 +154,9 @@ function get_pic() {
 			mv -f background/$save_file background/x_$save_file
 		fi
         exit 0
-	elif [ $pic_path == "randweb2" ]; then
-		get_randweb_from_api
-		# pic_path=$(get_randweb_from_api)
+	elif [ $pic_path=="set" ]; then
+		echo $param2 > source/setting
+		exit 0
 	fi
 	localpath=$path"/"$pic_path
 }
