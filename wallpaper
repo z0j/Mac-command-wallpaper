@@ -27,7 +27,9 @@ if [ $# -gt 0 ]; then
 		echo -e "useage -> wallpaper [para1] [para2] [para3] \n\t\teach para can be empty[means no function]\n\t\twhat's more, \"xxx\" means you should input this string to apply the function \n"
 		echo -e "para1 : your_wallpaper_path    :  wallpaper from yourself local path, like background/default.jpg \n" \
 			    "       \"randweb\"        :  wallpaper from web random , this will take a few seconds, please be patience\n" \
-			    "       \"randlocal\"      :  wallpaper from background random"
+				"       \"randweb:tag\"    :  wallpaper from web random and Specified label in search , this will take a few seconds, please be patience\n" \
+			    "       \"randlocal\"      :  wallpaper from background random" \
+				"		\"set\"            :  set config before random . use like \"wallpaper set purlity 001\". You can see some hidden benefits, provided you set the apikey config"
 		echo "para2 : \"com\"            :  composite code calender "
 		echo "para3 : number[0-52]     :  this means pass week counter of code calender, with para2"
 		exit -1
@@ -140,7 +142,7 @@ function get_randweb_from_api() {
 }
 
 function get_pic() {
-	if [ $pic_path == "randweb" ]; then
+	if [ $pic_path == "randweb" ]; then												# Get a random wallpaper from wallhaven
 		pic_url=($(get_randweb_from_api))
 		echo ${pic_url[0]}
 		pic_url=${pic_url[1]}
@@ -150,22 +152,24 @@ function get_pic() {
 		rm -f background/random*
 		curl -o $random_pic_path "$pic_url" > /dev/null 2>&1
 		pic_path=$random_pic_path
-	elif [ $pic_path == "randlocal" ]; then
+	elif [ $pic_path == "randlocal" ]; then											# Random from the locally saved wallpaper
 		max_c=`ls background | wc -l`
 		random_val=$(random $max_c)
 		pic_path="background/"`ls background | sed -n "${random_val}p" `
-	elif [ $pic_path == "save" ]; then
+	elif [ $pic_path == "save" ]; then												# Save the random web wallpaper to the local PC
         save_file=`ls -l -t background/ | head -2 | tail -1 | awk '{print $NF}'`
 		if [ ${save_file:0:6} == "random" ] ; then
 			mv -f background/$save_file background/x_$save_file
 		fi
         exit 0
-	elif [ $pic_path=="set" ]; then
-		# 如果没有任何参数，打出提示
+	elif [ $pic_path=="set" ]; then													# Configure the wallpaper randomly on the web
+		# If there are no parameters, type a prompt
 		if [ $param2 != "categories" -a $param2 != "purity" -a $param2 != "sorting" -a $param2 != "order" -a $param2 != "topRange" -a $param2 != "atleast" -a $param2 != "resolutions" -a $param2 != "ratios" -a $param2 != "colors" -a $param2 != "page" -a $param2 != "seed" -a $param2 != "apikey" ]; then
 			echo "when first param is set,the second param should be only apikey|categories|purity|sorting|order|topRange|atleast|resolutions|ratios|colors|page|seed"
 			exit -1
 		fi
+
+		# Obtain an existing configuration file
 		setting=`head -1 source/setting`
 		arrayTmp=(${setting//&/ })
 		# key and value
@@ -182,14 +186,15 @@ function get_pic() {
 			fi
 		done
 
-		# update value
 		declare -a new_arr
 		declare -a new_map
 		paramInarr=0
 		i=0
+
+		# For data already in the parameter table, the new value is replaced if it has content, and the parameter is deleted if it has no content
 		for var in ${map[*]}
 		do
-			if [ $param2 == $var ]; then		 # 对于已经在参数表内的数据，如果新值有内容，就替换新值，如果新值无内容，就删除这个参数
+			if [ $param2 == $var ]; then
 				paramInarr=1
 				if [[ ! $param3 == "" ]]; then
 					new_map[$i]=$var
@@ -202,16 +207,16 @@ function get_pic() {
 				let i+=1
 			fi
 		done
-		new_arr=(${new_arr[*]})
+		new_arr=(${new_arr[*]})		# Array rearrangement index
 		new_map=(${new_map[*]})
 
-		# 如果新参数不在已有范围内且不是空参数。就增加进来
+		# If the new parameter is outside the existing scope and is not an empty parameter. Just add in
 		if [[ $paramInarr == "0" ]] && [[ ! $param3 == "" ]]; then
 			new_map[$i]="$param2"
 			new_arr[$i]="$param3"
 		fi
 
-		# 拼接内容
+		# Reconcatenates the parameters into the content of a url filter
 		i=0
 		setting=''
 		for key in ${new_map[*]}
@@ -225,6 +230,7 @@ function get_pic() {
 			let i+=1
 		done
 
+		# Save the new configuration file to a file:source/setting
 		echo $setting
 		echo $setting > source/setting
 		exit 0
@@ -232,6 +238,7 @@ function get_pic() {
 	localpath=$path"/"$pic_path
 }
 
+# Call python to calendar the wallpaper
 function composite() {
 	if [ $composite == "yes" ]; then
 		python bin/generate_code_calender.py $pic_path $week_num

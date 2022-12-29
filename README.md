@@ -8,6 +8,21 @@
 
 `wallpaper [para1] [para2] [para3]`
 
+## V2.1更新内容
+**feature:**
+1. 新增加**randweb**搜索标签功能
+      * `wallpaper randweb:XXXX` 在随机图片的过程中指定主题。例如`wallpaper randweb:moutain`指定随机壁纸为山
+      * `wallpaper ranweb:cat+animal` 指定随机壁纸过程中搜索动物和猫的组合
+2. 增加搜索过滤内容，细节和参数参见：[这里](https://wallhaven.cc/help/api)。保存的搜索参数保存在source/setting
+   * 增加参数：`wallpaper set apikey xxxxxxxxx` 将apikey参数保存下来后面使用。如需取消则：`wallpaper set apikey`。  ~~apikey需要到wallhaven注册，才能提供。如有不便，可百度搜素~~
+   * 删除参数：`wallpaper set apikey`
+   * 修改参数：`wallpaper set purity 110`
+   * 支持参数：`apikey|categories|purity|sorting|order|topRange|atleast|resolutions|ratios|colors|page|seed`
+   * **`一次只能对一个参数进行操作，第一次操作建议直接修改source/setting文件`**
+
+fix:
+* 替换wallhaven壁纸过滤方式，由web过滤变更为wallhaven提供的api查找壁纸
+
 ## v2.0更新内容
 
 > 为了更方便的使用壁纸切换的命令，做到最精简，出了`Alfred`版本，即`Mac-wallpaper-switcher`。
