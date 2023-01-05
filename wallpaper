@@ -37,7 +37,7 @@ if [ $# -gt 0 ]; then
 		search=${extension:8}
 		extension='randweb'
 		pic_path='randweb'
-	elif [[ $pic_path =~ https?://[a-zA-Z0-9\.]+(:[0-9]{1,5})+ ]]; then
+	elif [[ $pic_path =~ https?://[a-zA-Z0-9\.]*(:[0-9]{1,5})? ]]; then
 		echo "set wallpaper to url:${pic_path}"
 	elif [ $extension != "jpg" -a $extension != "png" -a $extension != "randweb" -a $extension != "randlocal" -a $extension != "set" -a $extension != "save" ]; then
 		echo "first para should be your_wallpaper_path or randweb or randlocal or save or url"
@@ -238,6 +238,7 @@ function get_pic() {
 		exit 0
 	elif [[ $pic_path =~ https? ]]; then
 		pic_url=$pic_path
+		echo $pic_url
 		format=${pic_url##*.}
 		time=`date +%s`
 		random_pic_path="background/random"$time".$format"
