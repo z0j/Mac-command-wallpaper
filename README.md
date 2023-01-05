@@ -19,6 +19,8 @@
    * 修改参数：`wallpaper set purity 110`
    * 支持参数：`apikey|categories|purity|sorting|order|topRange|atleast|resolutions|ratios|colors|page|seed`
    * **`一次只能对一个参数进行操作，第一次操作建议直接修改source/setting文件`**
+3. 可以直接设置一张网络图片作为壁纸, 配合随机壁纸
+   `wallpaper "https://https://www.baidu.com/img/PCtm_d9c8750bed0b3c7d089fa7d55720d6cf.png"`
 
 fix:
 * 替换wallhaven壁纸过滤方式，由web过滤变更为wallhaven提供的api查找壁纸
