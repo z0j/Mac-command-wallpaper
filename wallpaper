@@ -37,8 +37,10 @@ if [ $# -gt 0 ]; then
 		search=${extension:8}
 		extension='randweb'
 		pic_path='randweb'
+	elif [[ $pic_path =~ https?://[a-zA-Z0-9\.]+(:[0-9]{1,5})+ ]]; then
+		echo "set wallpaper to url:${pic_path}"
 	elif [ $extension != "jpg" -a $extension != "png" -a $extension != "randweb" -a $extension != "randlocal" -a $extension != "set" -a $extension != "save" ]; then
-		echo "first para should be your_wallpaper_path or randweb or randlocal or save"
+		echo "first para should be your_wallpaper_path or randweb or randlocal or save or url"
 		exit -1
 	fi
 fi
@@ -162,7 +164,7 @@ function get_pic() {
 			mv -f background/$save_file background/x_$save_file
 		fi
         exit 0
-	elif [ $pic_path=="set" ]; then													# Configure the wallpaper randomly on the web
+	elif [ $pic_path == "set" ]; then													# Configure the wallpaper randomly on the web
 		# If there are no parameters, type a prompt
 		if [ $param2 != "categories" -a $param2 != "purity" -a $param2 != "sorting" -a $param2 != "order" -a $param2 != "topRange" -a $param2 != "atleast" -a $param2 != "resolutions" -a $param2 != "ratios" -a $param2 != "colors" -a $param2 != "page" -a $param2 != "seed" -a $param2 != "apikey" ]; then
 			echo "when first param is set,the second param should be only apikey|categories|purity|sorting|order|topRange|atleast|resolutions|ratios|colors|page|seed"
@@ -234,6 +236,14 @@ function get_pic() {
 		echo $setting
 		echo $setting > source/setting
 		exit 0
+	elif [[ $pic_path =~ https? ]]; then
+		pic_url=$pic_path
+		format=${pic_url##*.}
+		time=`date +%s`
+		random_pic_path="background/random"$time".$format"
+		rm -f background/random*
+		curl -o $random_pic_path "$pic_url" > /dev/null 2>&1
+		pic_path=$random_pic_path
 	fi
 	localpath=$path"/"$pic_path
 }
